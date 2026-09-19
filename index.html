@@ -1,1 +1,147 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owl OI Scanner - Top 2 F&O Stocks</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 15px; }
+    .container { max-width: 900px; margin: auto; }
+    h1 { text-align: center; color: #38bdf8; font-size: 24px; margin-bottom: 5px; }
+    p.sub { text-align: center; color: #94a3b8; font-size: 14px; margin-top: 0; }
+    .controls { display: flex; gap: 10px; margin: 20px 0; justify-content: center; flex-wrap: wrap; }
+    button { background: #2563eb; color: #fff; border: none; padding: 10px 18px; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+    button:hover { background: #1d4ed8; }
+    .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+    @media (max-width: 600px) { .cards-grid { grid-template-columns: 1fr; } }
+    .card { background: #1e293b; border-radius: 12px; padding: 20px; border-top: 5px solid #64748b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+    .card.buy { border-top-color: #22c55e; }
+    .card.sell { border-top-color: #ef4444; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+    .badge-buy { background: #14532d; color: #4ade80; }
+    .badge-sell { background: #7f1d1d; color: #f87171; }
+    .symbol { font-size: 26px; font-weight: 800; margin: 5px 0; }
+    .metric { margin: 8px 0; font-size: 14px; color: #cbd5e1; display: flex; justify-content: space-between; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+    .metric span.val { font-weight: bold; color: #fff; }
+    .metric.highlight { font-size: 16px; color: #38bdf8; border: none; margin-top: 12px; }
+    table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; font-size: 13px; }
+    th, td { padding: 10px; text-align: right; border-bottom: 1px solid #334155; }
+    th:first-child, td:first-child { text-align: left; }
+    th { background: #334155; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🦉 Owl OI Scanner</h1>
+    <p class="sub">100 F&O स्टॉक्स में से सबसे बड़े Put/Call OI अंतर वाले टॉप 2 स्टॉक्स</p>
+
+    <div class="controls">
+      <button onclick="scanStocks()">🔄 Scan 100 F&O Stocks</button>
+    </div>
+
+    <div class="cards-grid">
+      <!-- Top BUY Stock -->
+      <div class="card buy">
+        <span class="badge badge-buy">TOP 1: STRONG BUY (Put OI Dominance)</span>
+        <div class="symbol" id="buy-symbol">--</div>
+        <div class="metric">Total Put OI: <span class="val" id="buy-put-oi">0</span></div>
+        <div class="metric">Total Call OI: <span class="val" id="buy-call-oi">0</span></div>
+        <div class="metric highlight">Net Put Excess (सपोर्ट): <span class="val" id="buy-diff">0</span></div>
+      </div>
+
+      <!-- Top SELL Stock -->
+      <div class="card sell">
+        <span class="badge badge-sell">TOP 1: STRONG SELL (Call OI Dominance)</span>
+        <div class="symbol" id="sell-symbol">--</div>
+        <div class="metric">Total Call OI: <span class="val" id="sell-call-oi">0</span></div>
+        <div class="metric">Total Put OI: <span class="val" id="sell-put-oi">0</span></div>
+        <div class="metric highlight">Net Call Excess (रेजिस्टेंस): <span class="val" id="sell-diff">0</span></div>
+      </div>
+    </div>
+
+    <h3>📊 100 F&O स्टॉक्स स्कैन सूची (शीर्ष अंतर)</h3>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Stock</th>
+            <th>Call OI</th>
+            <th>Put OI</th>
+            <th>OI Difference (Put - Call)</th>
+            <th>Signal</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr><td colspan="5" style="text-align:center;">डेटा लोड करने के लिए 'Scan 100 F&O Stocks' दबाएं।</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const fnoStocks = [
+      "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "SBIN", "BHARTIARTL", "ITC", "KOTAKBANK", "LT",
+      "AXISBANK", "HINDUNILVR", "TATAMOTORS", "BAJFINANCE", "MARUTI", "SUNPHARMA", "TITAN", "ULTRACEMCO", "ASIANPAINT", "NTPC",
+      "TATASTEEL", "POWERGRID", "M&M", "ADANIENT", "JSWSTEEL", "COALINDIA", "BAJAJFINSV", "TECHM", "HCLTECH", "ONGC",
+      "WIPRO", "HDFCLIFE", "VEDL", "HEROMOTOCO", "GRASIM", "SBILIFE", "EICHERMOT", "DIVISLAB", "CIPLA", "APOLLOHOSP",
+      "BPCL", "TATACONSUM", "BRITANNIA", "INDUSINDBK", "ADANIPORTS", "HINDALCO", "DRREDDY", "JINDALSTEL", "BEL", "TRENT",
+      "HAL", "VEDL", "PFC", "RECLTD", "DLF", "SIEMENS", "IOC", "PIDILITIND", "CHOLAFIN", "SHRIRAMFIN",
+      "ABB", "AMBUJACEM", "TVSMOTOR", "HAVELLS", "DABUR", "GAIL", "CANBK", "BANKBARODA", "AUROPHARMA", "LUPIN",
+      "GODREJCP", "VOLTAS", "POLYCAB", "PERSISTENT", "COFORGE", "MPHASIS", "LTTS", "NAUKRI", "FEDERALBNK", "IDFCFIRSTB",
+      "SAIL", "NMDC", "NATIONALUM", "EXIDEIND", "ASHOKLEY", "BOSCHLTD", "MUTHOOTFIN", "LICHSGFIN", "MANAPPURAM", "CONCOR",
+      "GMRINFRA", "IGL", "MGL", "PETRONET", "CUMMINSIND", "UPL", "BALKRISIND", "ASTRAL", "DIXON", "OBEROIRLTY"
+    ];
+
+    function formatNumber(num) {
+      return new Intl.NumberFormat('en-IN').format(num);
+    }
+
+    function scanStocks() {
+      // 100 स्टॉक्स का OI डेटा प्रोसेस करना
+      const results = fnoStocks.map(symbol => {
+        // टेस्ट/डेमो डेटा जनरेटर (वास्तविक मार्केट लॉजिक सिमुलेशन)
+        const callOI = Math.floor(Math.random() * 8000000) + 1000000;
+        const putOI = Math.floor(Math.random() * 8000000) + 1000000;
+        const diff = putOI - callOI; // Positive = Put Heavy (Bullish), Negative = Call Heavy (Bearish)
+        return { symbol, callOI, putOI, diff };
+      });
+
+      // 1. सबसे बड़ा Put excess (Strong Buy)
+      const topBuy = [...results].sort((a, b) => b.diff - a.diff)[0];
+
+      // 2. सबसे बड़ा Call excess (Strong Sell)
+      const topSell = [...results].sort((a, b) => a.diff - b.diff)[0];
+
+      // UI अपडेट करें
+      document.getElementById('buy-symbol').innerText = topBuy.symbol;
+      document.getElementById('buy-put-oi').innerText = formatNumber(topBuy.putOI);
+      document.getElementById('buy-call-oi').innerText = formatNumber(topBuy.callOI);
+      document.getElementById('buy-diff').innerText = "+" + formatNumber(topBuy.diff);
+
+      document.getElementById('sell-symbol').innerText = topSell.symbol;
+      document.getElementById('sell-call-oi').innerText = formatNumber(topSell.callOI);
+      document.getElementById('sell-put-oi').innerText = formatNumber(topSell.putOI);
+      document.getElementById('sell-diff').innerText = "+" + formatNumber(Math.abs(topSell.diff));
+
+      // टेबल भरें
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = "";
+      results.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).slice(0, 15).forEach(item => {
+        const isBull = item.diff > 0;
+        const row = `<tr>
+          <td><b>${item.symbol}</b></td>
+          <td>${formatNumber(item.callOI)}</td>
+          <td>${formatNumber(item.putOI)}</td>
+          <td style="color:${isBull ? '#4ade80' : '#f87171'}">${isBull ? '+' : ''}${formatNumber(item.diff)}</td>
+          <td><span class="badge ${isBull ? 'badge-buy' : 'badge-sell'}">${isBull ? 'BUY' : 'SELL'}</span></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    // शुरुआती रन
+    window.onload = scanStocks;
+  </script>
+</body>
+</html>
 
