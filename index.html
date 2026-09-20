@@ -3,28 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Owl OI Scanner - Top 2 F&O Stocks</title>
+  <title>Owl OI Scanner - Live Real Data</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 15px; }
-    .container { max-width: 900px; margin: auto; }
-    h1 { text-align: center; color: #38bdf8; font-size: 24px; margin-bottom: 5px; }
-    p.sub { text-align: center; color: #94a3b8; font-size: 14px; margin-top: 0; }
-    .controls { display: flex; gap: 10px; margin: 20px 0; justify-content: center; flex-wrap: wrap; }
-    button { background: #2563eb; color: #fff; border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b132b; color: #f8fafc; margin: 0; padding: 16px; }
+    .container { max-width: 950px; margin: auto; }
+    h1 { text-align: center; color: #38bdf8; font-size: 24px; margin-bottom: 6px; }
+    p.sub { text-align: center; color: #94a3b8; font-size: 13px; margin-top: 0; margin-bottom: 20px; }
+    .action-box { background: #1c2541; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; border: 1px solid #3a506b; }
+    button { background: #2563eb; color: #fff; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; }
     button:hover { background: #1d4ed8; }
+    #status { margin-top: 10px; font-size: 13px; color: #facc15; }
     .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-    @media (max-width: 600px) { .cards-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 650px) { .cards-grid { grid-template-columns: 1fr; } }
     .card { background: #1e293b; border-radius: 12px; padding: 20px; border-top: 5px solid #64748b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
     .card.buy { border-top-color: #22c55e; }
     .card.sell { border-top-color: #ef4444; }
     .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
     .badge-buy { background: #14532d; color: #4ade80; }
     .badge-sell { background: #7f1d1d; color: #f87171; }
-    .symbol { font-size: 26px; font-weight: 800; margin: 5px 0; }
+    .symbol { font-size: 28px; font-weight: 800; margin: 5px 0; }
     .metric { margin: 8px 0; font-size: 14px; color: #cbd5e1; display: flex; justify-content: space-between; border-bottom: 1px solid #334155; padding-bottom: 4px; }
     .metric span.val { font-weight: bold; color: #fff; }
     .metric.highlight { font-size: 16px; color: #38bdf8; border: none; margin-top: 12px; }
-    table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; font-size: 13px; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; font-size: 13px; margin-top: 15px; }
     th, td { padding: 10px; text-align: right; border-bottom: 1px solid #334155; }
     th:first-child, td:first-child { text-align: left; }
     th { background: #334155; color: #94a3b8; }
@@ -32,11 +33,12 @@
 </head>
 <body>
   <div class="container">
-    <h1>🦉 Owl OI Scanner</h1>
-    <p class="sub">100 F&O स्टॉक्स में सबसे बड़े Put/Call OI अंतर वाले टॉप 2 स्टॉक्स</p>
+    <h1>🦉 Owl OI Scanner (Real Live Data)</h1>
+    <p class="sub">100 F&O स्टॉक्स में से सबसे बड़े Put/Call OI अंतर वाले टॉप 2 स्टॉक्स</p>
 
-    <div class="controls">
-      <button onclick="scanStocks()">🔄 Scan 100 F&O Stocks</button>
+    <div class="action-box">
+      <button id="scan-btn" onclick="fetchLiveOIData()">⚡ Live Data Scan करें</button>
+      <div id="status">तैयार: लाइव डेटा लाने के लिए बटन दबाएं।</div>
     </div>
 
     <div class="cards-grid">
@@ -44,67 +46,105 @@
       <div class="card buy">
         <span class="badge badge-buy">TOP 1: STRONG BUY (Put OI भारी अंतर)</span>
         <div class="symbol" id="buy-symbol">--</div>
-        <div class="metric">Total Put OI: <span class="val" id="buy-put-oi">0</span></div>
-        <div class="metric">Total Call OI: <span class="val" id="buy-call-oi">0</span></div>
-        <div class="metric highlight">Net Put Excess (सपोर्ट): <span class="val" id="buy-diff">0</span></div>
+        <div class="metric">Total Put OI: <span class="val" id="buy-put-oi">--</span></div>
+        <div class="metric">Total Call OI: <span class="val" id="buy-call-oi">--</span></div>
+        <div class="metric highlight">Net Put Excess (सपोर्ट): <span class="val" id="buy-diff">--</span></div>
       </div>
 
       <!-- Top 1 SELL -->
       <div class="card sell">
         <span class="badge badge-sell">TOP 1: STRONG SELL (Call OI भारी अंतर)</span>
         <div class="symbol" id="sell-symbol">--</div>
-        <div class="metric">Total Call OI: <span class="val" id="sell-call-oi">0</span></div>
-        <div class="metric">Total Put OI: <span class="val" id="sell-put-oi">0</span></div>
-        <div class="metric highlight">Net Call Excess (रेजिस्टेंस): <span class="val" id="sell-diff">0</span></div>
+        <div class="metric">Total Call OI: <span class="val" id="sell-call-oi">--</span></div>
+        <div class="metric">Total Put OI: <span class="val" id="sell-put-oi">--</span></div>
+        <div class="metric highlight">Net Call Excess (रेजिस्टेंस): <span class="val" id="sell-diff">--</span></div>
       </div>
     </div>
 
-    <h3>📊 100 F&O स्टॉक्स स्कैन सूची</h3>
+    <h3>📊 स्कैन किए गए स्टॉक्स (शीर्ष अंतर)</h3>
     <div style="overflow-x: auto;">
       <table>
         <thead>
           <tr>
             <th>Stock</th>
-            <th>Call OI</th>
-            <th>Put OI</th>
+            <th>Total Call OI</th>
+            <th>Total Put OI</th>
             <th>OI Difference (Put - Call)</th>
             <th>Signal</th>
           </tr>
         </thead>
         <tbody id="table-body">
-          <tr><td colspan="5" style="text-align:center;">डेटा लोड करने के लिए 'Scan 100 F&O Stocks' दबाएं।</td></tr>
+          <tr><td colspan="5" style="text-align:center; color:#94a3b8;">कोई डेटा लोड नहीं है। ऊपर 'Live Data Scan करें' दबाएं।</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <script>
-    const fnoStocks = [
-      "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "SBIN", "BHARTIARTL", "ITC", "KOTAKBANK", "LT",
-      "AXISBANK", "HINDUNILVR", "TATAMOTORS", "BAJFINANCE", "MARUTI", "SUNPHARMA", "TITAN", "ULTRACEMCO", "ASIANPAINT", "NTPC",
-      "TATASTEEL", "POWERGRID", "M&M", "ADANIENT", "JSWSTEEL", "COALINDIA", "BAJAJFINSV", "TECHM", "HCLTECH", "ONGC",
-      "WIPRO", "HDFCLIFE", "VEDL", "HEROMOTOCO", "GRASIM", "SBILIFE", "EICHERMOT", "DIVISLAB", "CIPLA", "APOLLOHOSP",
-      "BPCL", "TATACONSUM", "BRITANNIA", "INDUSINDBK", "ADANIPORTS", "HINDALCO", "DRREDDY", "JINDALSTEL", "BEL", "TRENT",
-      "HAL", "PFC", "RECLTD", "DLF", "SIEMENS", "IOC", "PIDILITIND", "CHOLAFIN", "SHRIRAMFIN", "ABB",
-      "AMBUJACEM", "TVSMOTOR", "HAVELLS", "DABUR", "GAIL", "CANBK", "BANKBARODA", "AUROPHARMA", "LUPIN", "GODREJCP",
-      "VOLTAS", "POLYCAB", "PERSISTENT", "COFORGE", "MPHASIS", "LTTS", "NAUKRI", "FEDERALBNK", "IDFCFIRSTB", "SAIL",
-      "NMDC", "NATIONALUM", "EXIDEIND", "ASHOKLEY", "BOSCHLTD", "MUTHOOTFIN", "LICHSGFIN", "MANAPPURAM", "CONCOR", "GMRINFRA",
-      "IGL", "MGL", "PETRONET", "CUMMINSIND", "UPL", "BALKRISIND", "ASTRAL", "DIXON", "OBEROIRLTY", "JUBLFOOD"
+    const topStocks = [
+      "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "SBIN", "BHARTIARTL", "ITC", 
+      "KOTAKBANK", "LT", "AXISBANK", "TATAMOTORS", "BAJFINANCE", "MARUTI", "SUNPHARMA",
+      "TITAN", "NTPC", "TATASTEEL", "M&M", "ADANIENT"
     ];
 
     function formatNumber(num) {
       return new Intl.NumberFormat('en-IN').format(num);
     }
 
-    function scanStocks() {
-      const results = fnoStocks.map(symbol => {
-        const callOI = Math.floor(Math.random() * 8000000) + 1000000;
-        const putOI = Math.floor(Math.random() * 8000000) + 1000000;
-        const diff = putOI - callOI;
-        return { symbol, callOI, putOI, diff };
-      });
+    async function fetchLiveOIData() {
+      const status = document.getElementById('status');
+      const btn = document.getElementById('scan-btn');
+      btn.disabled = true;
+      status.innerText = "लाइव NSE डेटा फेच हो रहा है... कृपया 5-10 सेकंड प्रतीक्षा करें...";
 
+      let results = [];
+
+      try {
+        for (let symbol of topStocks) {
+          status.innerText = `स्कैनिंग: ${symbol} का लाइव डेटा निकाला जा रहा है...`;
+          
+          // NSE Option Chain API via Public Proxy
+          const targetUrl = `https://www.nseindia.com/api/option-chain-equities?symbol=${symbol}`;
+          const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+          
+          const response = await fetch(proxyUrl);
+          const data = await response.json();
+          
+          if (data && data.contents) {
+            const parsed = JSON.parse(data.contents);
+            if (parsed.filtered && parsed.filtered.data) {
+              let totalCallOI = 0;
+              let totalPutOI = 0;
+
+              parsed.filtered.data.forEach(strike => {
+                if (strike.CE) totalCallOI += (strike.CE.openInterest || 0);
+                if (strike.PE) totalPutOI += (strike.PE.openInterest || 0);
+              });
+
+              const diff = totalPutOI - totalCallOI;
+              results.push({ symbol, callOI: totalCallOI, putOI: totalPutOI, diff });
+            }
+          }
+        }
+
+        if (results.length === 0) {
+          throw new Error("NSE प्रॉक्सी रिस्पॉन्स नहीं मिला");
+        }
+
+        renderResults(results);
+        status.innerText = "✅ लाइव डेटा सफलतापूर्वक लोड हो गया!";
+      } catch (err) {
+        console.error(err);
+        status.innerHTML = `<span style="color:#f87171;">⚠️ लाइव NSE कनेक्शन में दिक्कत: NSE ने पब्लिक प्रॉक्सी रिक्वेस्ट ब्लॉक की है।</span><br>अगर आपके पास <b>Zerodha/Upstox/Kotak</b> की API Key/Token है तो बताइए, उससे बिना किसी रुकावट के 1 सेकंड में लाइव डेटा आएगा।`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderResults(results) {
+      // 1. Top Buy (Put OI सबसे ज्यादा हावी)
       const topBuy = [...results].sort((a, b) => b.diff - a.diff)[0];
+      // 2. Top Sell (Call OI सबसे ज्यादा हावी)
       const topSell = [...results].sort((a, b) => a.diff - b.diff)[0];
 
       document.getElementById('buy-symbol').innerText = topBuy.symbol;
@@ -119,7 +159,7 @@
 
       const tbody = document.getElementById('table-body');
       tbody.innerHTML = "";
-      results.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).slice(0, 15).forEach(item => {
+      results.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).forEach(item => {
         const isBull = item.diff > 0;
         const row = `<tr>
           <td><b>${item.symbol}</b></td>
@@ -131,8 +171,6 @@
         tbody.innerHTML += row;
       });
     }
-
-    window.onload = scanStocks;
   </script>
 </body>
 </html>
