@@ -2,9 +2,11 @@ name: Fetch Live F&O OI
 
 on:
   schedule:
-    # सोमवार से शुक्रवार, मार्केट के दौरान हर 15 मिनट में चलेगा
     - cron: '*/15 3-10 * * 1-5'
-  workflow_dispatch: # मैन्युअल चलाने के लिए
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   update-data:
@@ -14,7 +16,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: setup-python@v4
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
@@ -32,21 +34,19 @@ jobs:
               "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "SBIN", "BHARTIARTL", "ITC", 
               "KOTAKBANK", "LT", "AXISBANK", "TATAMOTORS", "BAJFINANCE", "MARUTI", "SUNPHARMA",
               "TITAN", "NTPC", "TATASTEEL", "M&M", "ADANIENT", "COALINDIA", "BAJAJFINSV", "TECHM",
-              "HCLTECH", "ONGC", "WIPRO", "VEDL", "HEROMOTOCO", "GRASIM", "DIVISLAB", "CIPLA",
-              "BPCL", "INDUSINDBK", "ADANIPORTS", "HINDALCO", "BEL", "TRENT", "HAL", "PFC", "DLF"
+              "HCLTECH", "ONGC", "WIPRO", "VEDL", "HEROMOTOCO", "GRASIM", "DIVISLAB", "CIPLA"
           ]
 
           session = requests.Session()
           headers = {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
               "Accept-Language": "en-US,en;q=0.9",
               "Accept-Encoding": "gzip, deflate, br"
           }
           
-          # NSE कुकीज़ इनिशियलाइज़
           try:
               session.get("https://www.nseindia.com", headers=headers, timeout=10)
-          except Exception as e:
+          except Exception:
               pass
 
           results = []
