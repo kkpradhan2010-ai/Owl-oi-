@@ -33,7 +33,7 @@
 <body>
   <div class="container">
     <h1>🦉 Owl OI Scanner (Live Automation)</h1>
-    <p class="sub">100 F&O स्टॉक्स में से सबसे बड़े Put/Call OI अंतर वाले टॉप 2 स्टॉक्स</p>
+    <p class="sub">F&O स्टॉक्स में से सबसे बड़े Put/Call OI अंतर वाले टॉप 2 स्टॉक्स</p>
 
     <div class="status-box" id="status-bar">
       🔄 लाइव F&O डेटा लोड किया जा रहा है...
@@ -72,7 +72,7 @@
           </tr>
         </thead>
         <tbody id="table-body">
-          <tr><td colspan="5" style="text-align:center; color:#94a3b8;">लोड हो रहा है...</td></tr>
+          <tr><td colspan="5" style="text-align:center; color:#94a3b8;">डेटा लोड हो रहा है...</td></tr>
         </tbody>
       </table>
     </div>
@@ -85,50 +85,59 @@
 
     async function loadLiveData() {
       const statusBar = document.getElementById('status-bar');
+      const directUrl = 'https://raw.githubusercontent.com/kkpradhan2010-ai/Owl-oi-/main/live_oi.json?t=' + new Date().getTime();
+      const localUrl = 'live_oi.json?t=' + new Date().getTime();
+
+      let json = null;
+
       try {
-        // GitHub रिपोजिटरी में ऑटो-अपडेट होने वाले JSON से डेटा लेना (no CORS, 100% working)
-        const res = await fetch('live_oi.json?t=' + new Date().getTime());
-        if (!res.ok) throw new Error("डेटा फाइल अभी तैयार हो रही है");
-        
-        const json = await res.json();
-        const results = json.stocks;
-
-        if (!results || results.length === 0) throw new Error("स्टॉक डेटा खाली है");
-
-        statusBar.innerHTML = `<span style="color:#4ade80;">🟢 लाइव डेटा कनेक्टेड! अंतिम अपडेट: ${json.last_updated}</span>`;
-
-        // 1. Top Buy
-        const topBuy = [...results].sort((a, b) => b.diff - a.diff)[0];
-        // 2. Top Sell
-        const topSell = [...results].sort((a, b) => a.diff - b.diff)[0];
-
-        document.getElementById('buy-symbol').innerText = topBuy.symbol;
-        document.getElementById('buy-put-oi').innerText = formatNumber(topBuy.putOI);
-        document.getElementById('buy-call-oi').innerText = formatNumber(topBuy.callOI);
-        document.getElementById('buy-diff').innerText = "+" + formatNumber(topBuy.diff);
-
-        document.getElementById('sell-symbol').innerText = topSell.symbol;
-        document.getElementById('sell-call-oi').innerText = formatNumber(topSell.callOI);
-        document.getElementById('sell-put-oi').innerText = formatNumber(topSell.putOI);
-        document.getElementById('sell-diff').innerText = "+" + formatNumber(Math.abs(topSell.diff));
-
-        const tbody = document.getElementById('table-body');
-        tbody.innerHTML = "";
-        results.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).forEach(item => {
-          const isBull = item.diff > 0;
-          const row = `<tr>
-            <td><b>${item.symbol}</b></td>
-            <td>${formatNumber(item.callOI)}</td>
-            <td>${formatNumber(item.putOI)}</td>
-            <td style="color:${isBull ? '#4ade80' : '#f87171'}">${isBull ? '+' : ''}${formatNumber(item.diff)}</td>
-            <td><span class="badge ${isBull ? 'badge-buy' : 'badge-sell'}">${isBull ? 'BUY' : 'SELL'}</span></td>
-          </tr>`;
-          tbody.innerHTML += row;
-        });
-
+        let res = await fetch(directUrl);
+        if (!res.ok) {
+          res = await fetch(localUrl);
+        }
+        if (!res.ok) throw new Error("डेटा फ़ाइल नहीं मिली");
+        json = await res.json();
       } catch (err) {
         statusBar.innerHTML = `<span style="color:#facc15;">⏳ बैकग्राउंड रोबोट पहली बार लाइव डेटा फेच कर रहा है... कृपया 1-2 मिनट बाद पेज रीलोड करें।</span>`;
+        return;
       }
+
+      const results = json.stocks;
+      if (!results || results.length === 0) {
+        statusBar.innerHTML = `<span style="color:#f87171;">⚠️ लाइव डेटा फ़ाइल खाली है।</span>`;
+        return;
+      }
+
+      statusBar.innerHTML = `<span style="color:#4ade80;">🟢 लाइव डेटा कनेक्टेड! अंतिम अपडेट: ${json.last_updated}</span>`;
+
+      // 1. Top Buy (Put OI सबसे ज्यादा हावी)
+      const topBuy = [...results].sort((a, b) => b.diff - a.diff)[0];
+      // 2. Top Sell (Call OI सबसे ज्यादा हावी)
+      const topSell = [...results].sort((a, b) => a.diff - b.diff)[0];
+
+      document.getElementById('buy-symbol').innerText = topBuy.symbol;
+      document.getElementById('buy-put-oi').innerText = formatNumber(topBuy.putOI);
+      document.getElementById('buy-call-oi').innerText = formatNumber(topBuy.callOI);
+      document.getElementById('buy-diff').innerText = "+" + formatNumber(topBuy.diff);
+
+      document.getElementById('sell-symbol').innerText = topSell.symbol;
+      document.getElementById('sell-call-oi').innerText = formatNumber(topSell.callOI);
+      document.getElementById('sell-put-oi').innerText = formatNumber(topSell.putOI);
+      document.getElementById('sell-diff').innerText = "+" + formatNumber(Math.abs(topSell.diff));
+
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = "";
+      results.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).forEach(item => {
+        const isBull = item.diff > 0;
+        const row = `<tr>
+          <td><b>${item.symbol}</b></td>
+          <td>${formatNumber(item.callOI)}</td>
+          <td>${formatNumber(item.putOI)}</td>
+          <td style="color:${isBull ? '#4ade80' : '#f87171'}">${isBull ? '+' : ''}${formatNumber(item.diff)}</td>
+          <td><span class="badge ${isBull ? 'badge-buy' : 'badge-sell'}">${isBull ? 'BUY' : 'SELL'}</span></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
     }
 
     window.onload = loadLiveData;
