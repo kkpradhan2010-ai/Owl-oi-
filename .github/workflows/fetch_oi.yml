@@ -28,6 +28,7 @@ jobs:
           python - << 'EOF'
           import requests
           import json
+          import time
           from datetime import datetime
 
           symbols = [
@@ -39,31 +40,43 @@ jobs:
 
           session = requests.Session()
           headers = {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+              "Accept": "*/*",
               "Accept-Language": "en-US,en;q=0.9",
-              "Accept-Encoding": "gzip, deflate, br"
+              "Referer": "https://www.nseindia.com/option-chain",
           }
           
+          # NSE कुकीज़ लोड करना
           try:
-              session.get("https://www.nseindia.com", headers=headers, timeout=10)
-          except Exception:
-              pass
+              session.get("https://www.nseindia.com", headers=headers, timeout=15)
+              time.sleep(1)
+              session.get("https://www.nseindia.com/option-chain", headers=headers, timeout=15)
+              time.sleep(1)
+          except Exception as e:
+              print("Cookie error:", e)
 
           results = []
           for sym in symbols:
               try:
                   url = f"https://www.nseindia.com/api/option-chain-equities?symbol={sym}"
-                  res = session.get(url, headers=headers, timeout=10)
-                  data = res.json()
-                  ce_oi = 0
-                  pe_oi = 0
-                  if "filtered" in data and "data" in data["filtered"]:
-                      for item in data["filtered"]["data"]:
+                  res = session.get(url, headers=headers, timeout=15)
+                  if res.status_code == 200:
+                      data = res.json()
+                      ce_oi = 0
+                      pe_oi = 0
+                      records = data.get("filtered", {}).get("data", [])
+                      if not records:
+                          records = data.get("records", {}).get("data", [])
+                      
+                      for item in records:
                           if "CE" in item: ce_oi += item["CE"].get("openInterest", 0)
                           if "PE" in item: pe_oi += item["PE"].get("openInterest", 0)
-                      diff = pe_oi - ce_oi
-                      results.append({"symbol": sym, "callOI": ce_oi, "putOI": pe_oi, "diff": diff})
-              except Exception:
+                      
+                      if ce_oi > 0 or pe_oi > 0:
+                          diff = pe_oi - ce_oi
+                          results.append({"symbol": sym, "callOI": ce_oi, "putOI": pe_oi, "diff": diff})
+                  time.sleep(0.5)
+              except Exception as err:
                   continue
 
           out = {
@@ -73,7 +86,7 @@ jobs:
 
           with open("live_oi.json", "w") as f:
               json.dump(out, f, indent=2)
-          print("Updated live_oi.json successfully!")
+          print(f"Success! Saved {len(results)} stocks to live_oi.json")
           EOF
 
       - name: Commit and push if changed
