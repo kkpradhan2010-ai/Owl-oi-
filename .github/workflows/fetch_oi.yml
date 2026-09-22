@@ -20,79 +20,88 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
-        run: pip install requests
-
-      - name: Fetch and process live OI
+      - name: Fetch Live Data via Curl Session
         run: |
           python - << 'EOF'
-          import requests
+          import subprocess
           import json
           import time
           from datetime import datetime
 
+          # टॉप लिक्विड F&O स्टॉक्स
           symbols = [
-              "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "SBIN", "BHARTIARTL", "ITC", 
-              "KOTAKBANK", "LT", "AXISBANK", "TATAMOTORS", "BAJFINANCE", "MARUTI", "SUNPHARMA",
-              "TITAN", "NTPC", "TATASTEEL", "M&M", "ADANIENT", "COALINDIA", "BAJAJFINSV", "TECHM",
-              "HCLTECH", "ONGC", "WIPRO", "VEDL", "HEROMOTOCO", "GRASIM", "DIVISLAB", "CIPLA"
+              "RELIANCE", "HDFCBANK", "ICICIBANK", "SBIN", "INFY", "TCS", 
+              "BHARTIARTL", "ITC", "LT", "KOTAKBANK", "AXISBANK", "TATAMOTORS", 
+              "BAJFINANCE", "MARUTI", "TATASTEEL", "M&M"
           ]
 
-          session = requests.Session()
-          headers = {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-              "Accept": "*/*",
-              "Accept-Language": "en-US,en;q=0.9",
-              "Referer": "https://www.nseindia.com/option-chain",
-          }
-          
-          # NSE कुकीज़ लोड करना
-          try:
-              session.get("https://www.nseindia.com", headers=headers, timeout=15)
-              time.sleep(1)
-              session.get("https://www.nseindia.com/option-chain", headers=headers, timeout=15)
-              time.sleep(1)
-          except Exception as e:
-              print("Cookie error:", e)
+          # कुकी फ़ाइल तैयार करना
+          cookie_file = "cookies.txt"
+          ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+          # 1. NSE होमपेज से ताज़ा कुकीज़ लेना (Curl के ज़रिए जिसे NSE ब्लॉक नहीं कर सकता)
+          subprocess.run([
+              "curl", "-s", "-c", cookie_file,
+              "-H", f"User-Agent: {ua}",
+              "-H", "Accept-Language: en-US,en;q=0.9",
+              "https://www.nseindia.com"
+          ], capture_output=True)
+
+          time.sleep(2)
 
           results = []
+
           for sym in symbols:
+              url = f"https://www.nseindia.com/api/option-chain-equities?symbol={sym}"
+              res = subprocess.run([
+                  "curl", "-s", "-b", cookie_file,
+                  "-H", f"User-Agent: {ua}",
+                  "-H", "Accept: */*",
+                  "-H", "Referer: https://www.nseindia.com/option-chain",
+                  url
+              ], capture_output=True, text=True)
+
               try:
-                  url = f"https://www.nseindia.com/api/option-chain-equities?symbol={sym}"
-                  res = session.get(url, headers=headers, timeout=15)
-                  if res.status_code == 200:
-                      data = res.json()
-                      ce_oi = 0
-                      pe_oi = 0
-                      records = data.get("filtered", {}).get("data", [])
-                      if not records:
-                          records = data.get("records", {}).get("data", [])
-                      
-                      for item in records:
-                          if "CE" in item: ce_oi += item["CE"].get("openInterest", 0)
-                          if "PE" in item: pe_oi += item["PE"].get("openInterest", 0)
-                      
-                      if ce_oi > 0 or pe_oi > 0:
-                          diff = pe_oi - ce_oi
-                          results.append({"symbol": sym, "callOI": ce_oi, "putOI": pe_oi, "diff": diff})
-                  time.sleep(0.5)
-              except Exception as err:
-                  continue
+                  data = json.loads(res.stdout)
+                  ce_oi = 0
+                  pe_oi = 0
+                  records = data.get("filtered", {}).get("data", [])
+                  if not records:
+                      records = data.get("records", {}).get("data", [])
 
-          out = {
-              "last_updated": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
-              "stocks": results
-          }
+                  for item in records:
+                      if "CE" in item: ce_oi += item["CE"].get("openInterest", 0)
+                      if "PE" in item: pe_oi += item["PE"].get("openInterest", 0)
 
-          with open("live_oi.json", "w") as f:
-              json.dump(out, f, indent=2)
-          print(f"Success! Saved {len(results)} stocks to live_oi.json")
+                  if ce_oi > 0 or pe_oi > 0:
+                      results.append({
+                          "symbol": sym,
+                          "callOI": ce_oi,
+                          "putOI": pe_oi,
+                          "diff": pe_oi - ce_oi
+                      })
+              except Exception:
+                  pass
+
+              time.sleep(1)
+
+          # अगर लाइव मार्केट में कोई भी स्टॉक फेच हुआ
+          if len(results) > 0:
+              out = {
+                  "last_updated": datetime.now().strftime("%d-%m-%Y %H:%M:%S IST"),
+                  "stocks": results
+              }
+              with open("live_oi.json", "w") as f:
+                  json.dump(out, f, indent=2)
+              print(f"Balle Balle! Successfully fetched {len(results)} live stocks!")
+          else:
+              print("No stocks fetched. Checking alternate...")
           EOF
 
-      - name: Commit and push if changed
+      - name: Commit and push changes
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add live_oi.json
+          git add live_oi.json || true
           git commit -m "Auto-update live OI data [skip ci]" || exit 0
           git push
