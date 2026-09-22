@@ -9,22 +9,23 @@
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b132b; color: #f8fafc; margin: 0; padding: 16px; }
     .container { max-width: 950px; margin: auto; }
-    h1 { text-align: center; color: #38bdf8; font-size: 24px; margin-bottom: 4px; }
-    p.sub { text-align: center; color: #94a3b8; font-size: 13px; margin-top: 0; margin-bottom: 20px; }
+    h1 { text-align: center; color: #38bdf8; font-size: 22px; margin-bottom: 4px; }
+    p.sub { text-align: center; color: #94a3b8; font-size: 13px; margin-top: 0; margin-bottom: 15px; }
     .status-box { background: #1c2541; padding: 12px; border-radius: 10px; margin-bottom: 20px; text-align: center; border: 1px solid #3a506b; font-size: 14px; }
     .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
     @media (max-width: 650px) { .cards-grid { grid-template-columns: 1fr; } }
-    .card { background: #1e293b; border-radius: 12px; padding: 20px; border-top: 5px solid #64748b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+    .card { background: #1e293b; border-radius: 12px; padding: 18px; border-top: 5px solid #64748b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
     .card.buy { border-top-color: #22c55e; }
     .card.sell { border-top-color: #ef4444; }
-    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-bottom: 8px; }
     .badge-buy { background: #14532d; color: #4ade80; }
     .badge-sell { background: #7f1d1d; color: #f87171; }
-    .symbol { font-size: 28px; font-weight: 800; margin: 5px 0; }
-    .metric { margin: 8px 0; font-size: 14px; color: #cbd5e1; display: flex; justify-content: space-between; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+    .symbol { font-size: 26px; font-weight: 800; margin: 4px 0; }
+    .metric { margin: 8px 0; font-size: 13px; color: #cbd5e1; display: flex; justify-content: space-between; border-bottom: 1px solid #334155; padding-bottom: 4px; }
     .metric span.val { font-weight: bold; color: #fff; }
-    .metric.highlight { font-size: 16px; color: #38bdf8; border: none; margin-top: 12px; }
-    table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; font-size: 13px; margin-top: 15px; }
+    .metric.highlight { font-size: 15px; color: #38bdf8; border: none; margin-top: 10px; }
+    .btn-refresh { display: block; width: 100%; max-width: 250px; margin: 0 auto 20px; padding: 10px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; font-size: 13px; }
     th, td { padding: 10px; text-align: right; border-bottom: 1px solid #334155; }
     th:first-child, td:first-child { text-align: left; }
     th { background: #334155; color: #94a3b8; }
@@ -32,34 +33,36 @@
 </head>
 <body>
   <div class="container">
-    <h1>🦉 Owl OI Scanner (Live Automation)</h1>
-    <p class="sub">F&O स्टॉक्स में से सबसे बड़े Put/Call OI अंतर वाले टॉप 2 स्टॉक्स</p>
+    <h1>🦉 Owl OI Scanner (Live NSE)</h1>
+    <p class="sub">सीधे लाइव मार्केट F&O डेटा से स्कैनिंग</p>
 
     <div class="status-box" id="status-bar">
-      🔄 लाइव F&O डेटा लोड किया जा रहा है...
+      🔄 लाइव F&O डेटा लोड हो रहा है...
     </div>
+
+    <button class="btn-refresh" onclick="fetchLiveOI()">🔄 तुरंत रीफ्रेश करें</button>
 
     <div class="cards-grid">
       <!-- Top 1 BUY -->
       <div class="card buy">
-        <span class="badge badge-buy">TOP 1: STRONG BUY (Put OI भारी अंतर)</span>
+        <span class="badge badge-buy">TOP 1: STRONG BUY (Put OI Support)</span>
         <div class="symbol" id="buy-symbol">--</div>
         <div class="metric">Total Put OI: <span class="val" id="buy-put-oi">--</span></div>
         <div class="metric">Total Call OI: <span class="val" id="buy-call-oi">--</span></div>
-        <div class="metric highlight">Net Put Excess (सपोर्ट): <span class="val" id="buy-diff">--</span></div>
+        <div class="metric highlight">Net Put Excess: <span class="val" id="buy-diff">--</span></div>
       </div>
 
       <!-- Top 1 SELL -->
       <div class="card sell">
-        <span class="badge badge-sell">TOP 1: STRONG SELL (Call OI भारी अंतर)</span>
+        <span class="badge badge-sell">TOP 1: STRONG SELL (Call OI Resistance)</span>
         <div class="symbol" id="sell-symbol">--</div>
         <div class="metric">Total Call OI: <span class="val" id="sell-call-oi">--</span></div>
         <div class="metric">Total Put OI: <span class="val" id="sell-put-oi">--</span></div>
-        <div class="metric highlight">Net Call Excess (रेजिस्टेंस): <span class="val" id="sell-diff">--</span></div>
+        <div class="metric highlight">Net Call Excess: <span class="val" id="sell-diff">--</span></div>
       </div>
     </div>
 
-    <h3>📊 F&O स्टॉक्स लाइव रैंकिंग (शीर्ष OI अंतर)</h3>
+    <h3>📊 F&O स्टॉक्स लाइव रैंकिंग</h3>
     <div style="overflow-x: auto;">
       <table>
         <thead>
@@ -67,52 +70,67 @@
             <th>Stock</th>
             <th>Call OI</th>
             <th>Put OI</th>
-            <th>OI Difference (Put - Call)</th>
+            <th>OI Diff (PE - CE)</th>
             <th>Signal</th>
           </tr>
         </thead>
         <tbody id="table-body">
-          <tr><td colspan="5" style="text-align:center; color:#94a3b8;">डेटा लोड हो रहा है...</td></tr>
+          <tr><td colspan="5" style="text-align:center; color:#94a3b8;">लोडिंग जारी है...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <script>
+    const STOCKS = ["RELIANCE", "HDFCBANK", "ICICIBANK", "SBIN", "INFY", "TCS", "BHARTIARTL", "ITC", "LT", "KOTAKBANK", "AXISBANK", "TATAMOTORS", "BAJFINANCE", "MARUTI", "TATASTEEL", "M&M"];
+
     function formatNumber(num) {
       return new Intl.NumberFormat('en-IN').format(num);
     }
 
-    async function loadLiveData() {
+    async function fetchLiveOI() {
       const statusBar = document.getElementById('status-bar');
-      const directUrl = 'https://raw.githubusercontent.com/kkpradhan2010-ai/Owl-oi-/main/live_oi.json?t=' + new Date().getTime();
-      const localUrl = 'live_oi.json?t=' + new Date().getTime();
+      statusBar.innerHTML = "🔄 लाइव NSE डेटा फेच किया जा रहा है... (5-10 सेकंड)";
 
-      let json = null;
+      let results = [];
 
-      try {
-        let res = await fetch(directUrl);
-        if (!res.ok) {
-          res = await fetch(localUrl);
+      for (let sym of STOCKS) {
+        try {
+          // भारत के सीधे लाइव एंडपॉइंट से डेटा खींचना
+          const targetUrl = `https://www.nseindia.com/api/option-chain-equities?symbol=${sym}`;
+          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+          
+          const res = await fetch(proxyUrl);
+          if (!res.ok) continue;
+
+          const data = await res.json();
+          let ce_oi = 0;
+          let pe_oi = 0;
+          const records = data.filtered ? data.filtered.data : (data.records ? data.records.data : []);
+
+          for (let item of records) {
+            if (item.CE) ce_oi += (item.CE.openInterest || 0);
+            if (item.PE) pe_oi += (item.PE.openInterest || 0);
+          }
+
+          if (ce_oi > 0 || pe_oi > 0) {
+            results.push({ symbol: sym, callOI: ce_oi, putOI: pe_oi, diff: pe_oi - ce_oi });
+          }
+        } catch (e) {
+          // अगर किसी एक में दिक्कत आए तो बाकी जारी रखें
         }
-        if (!res.ok) throw new Error("डेटा फ़ाइल नहीं मिली");
-        json = await res.json();
-      } catch (err) {
-        statusBar.innerHTML = `<span style="color:#facc15;">⏳ बैकग्राउंड रोबोट पहली बार लाइव डेटा फेच कर रहा है... कृपया 1-2 मिनट बाद पेज रीलोड करें।</span>`;
+      }
+
+      if (results.length === 0) {
+        statusBar.innerHTML = `<span style="color:#f87171;">⚠️ लाइव कनेक्शन में अड़चन है। पेज को 1 मिनट बाद दोबारा रीफ्रेश करें।</span>`;
         return;
       }
 
-      const results = json.stocks;
-      if (!results || results.length === 0) {
-        statusBar.innerHTML = `<span style="color:#f87171;">⚠️ लाइव डेटा फ़ाइल खाली है।</span>`;
-        return;
-      }
+      statusBar.innerHTML = `<span style="color:#4ade80;">🟢 लाइव डेटा कनेक्टेड! (${results.length} स्टॉक्स स्कैन हुए)</span>`;
 
-      statusBar.innerHTML = `<span style="color:#4ade80;">🟢 लाइव डेटा कनेक्टेड! अंतिम अपडेट: ${json.last_updated}</span>`;
-
-      // 1. Top Buy (Put OI सबसे ज्यादा हावी)
+      // Top Buy (Put OI heavy)
       const topBuy = [...results].sort((a, b) => b.diff - a.diff)[0];
-      // 2. Top Sell (Call OI सबसे ज्यादा हावी)
+      // Top Sell (Call OI heavy)
       const topSell = [...results].sort((a, b) => a.diff - b.diff)[0];
 
       document.getElementById('buy-symbol').innerText = topBuy.symbol;
@@ -140,7 +158,7 @@
       });
     }
 
-    window.onload = loadLiveData;
+    window.onload = fetchLiveOI;
   </script>
 </body>
 </html>
