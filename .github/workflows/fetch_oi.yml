@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  scrape-live-nse:
+  scrape-live-data:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -20,89 +20,69 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Network Engines
+      - name: Install Dependencies
         run: |
-          pip install requests curl_cffi
+          pip install requests yfinance
 
-      - name: Execute Live Scrape
+      - name: Fetch Verified Market Data
         run: |
           python - << 'EOF'
           import json
           import time
           from datetime import datetime
-          from curl_cffi import requests
+          import yfinance as yf
 
+          # F&O के प्रमुख स्टॉक्स
           symbols = [
-              "RELIANCE", "HDFCBANK", "ICICIBANK", "SBIN", "INFY", "TCS", 
-              "BHARTIARTL", "ITC", "LT", "KOTAKBANK", "AXISBANK", "TATAMOTORS", 
-              "BAJFINANCE", "MARUTI", "TATASTEEL", "M&M", "ADANIENT", "COALINDIA",
-              "NTPC", "TITAN", "SUNPHARMA", "BAJAJFINSV", "ONGC", "WIPRO"
+              "RELIANCE.NS", "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "INFY.NS", 
+              "TCS.NS", "BHARTIARTL.NS", "ITC.NS", "LT.NS", "KOTAKBANK.NS", 
+              "AXISBANK.NS", "TATAMOTORS.NS", "BAJFINANCE.NS", "MARUTI.NS", 
+              "TATASTEEL.NS", "M&M.NS", "ADANIENT.NS", "COALINDIA.NS"
           ]
-
-          session = requests.Session(impersonate="chrome120")
-          headers = {
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-              "Accept-Language": "en-US,en;q=0.9",
-          }
-
-          # 1. NSE होमपेज से कुकी और ऑथेंटिकेशन टोकन लेना
-          try:
-              session.get("https://www.nseindia.com", headers=headers, timeout=15)
-              time.sleep(1)
-              session.get("https://www.nseindia.com/option-chain", headers=headers, timeout=15)
-              time.sleep(2)
-          except Exception as e:
-              print(f"Init Warning: {e}")
 
           stock_results = []
 
-          for sym in symbols:
+          for s in symbols:
+              clean_sym = s.replace(".NS", "")
               try:
-                  url = f"https://www.nseindia.com/api/option-chain-equities?symbol={sym}"
-                  resp = session.get(url, headers={"Referer": "https://www.nseindia.com/option-chain"}, timeout=15)
+                  ticker = yf.Ticker(s)
+                  # लाइव प्राइस
+                  fast_info = ticker.fast_info
+                  ltp = round(fast_info.last_price, 2)
                   
-                  if resp.status_code == 200:
-                      data = resp.json()
-                      records = data.get("records", {})
-                      underlying_price = records.get("underlyingValue", 0)
+                  # ऑप्शंस एक्सपायरी डेट्स
+                  expirations = ticker.options
+                  if expirations:
+                      # सबसे नजदीकी एक्सपायरी का लाइव चेन
+                      opt = ticker.option_chain(expirations[0])
+                      calls = opt.calls
+                      puts = opt.puts
                       
-                      chain_data = data.get("filtered", {}).get("data", [])
-                      if not chain_data:
-                          chain_data = records.get("data", [])
-
-                      ce_total_oi = 0
-                      pe_total_oi = 0
-
-                      for row in chain_data:
-                          if "CE" in row:
-                              ce_total_oi += row["CE"].get("openInterest", 0)
-                          if "PE" in row:
-                              pe_total_oi += row["PE"].get("openInterest", 0)
-
-                      if underlying_price > 0 and (ce_total_oi > 0 or pe_total_oi > 0):
-                          diff = pe_total_oi - ce_total_oi
-                          stock_results.append({
-                              "symbol": sym,
-                              "ltp": underlying_price,
-                              "callOI": ce_total_oi,
-                              "putOI": pe_total_oi,
-                              "diff": diff
-                          })
-                          print(f"OK: {sym} -> LTP: {underlying_price} | Diff: {diff}")
-                  time.sleep(1)
-              except Exception as err:
-                  print(f"Skip {sym}: {err}")
-                  time.sleep(1)
+                      total_ce_oi = int(calls['openInterest'].fillna(0).sum())
+                      total_pe_oi = int(puts['openInterest'].fillna(0).sum())
+                      diff = total_pe_oi - total_ce_oi
+                      
+                      stock_results.append({
+                          "symbol": clean_sym,
+                          "ltp": ltp,
+                          "callOI": total_ce_oi,
+                          "putOI": total_pe_oi,
+                          "diff": diff
+                      })
+                      print(f"Success: {clean_sym} -> LTP: {ltp}, Diff: {diff}")
+              except Exception as e:
+                  print(f"Error on {clean_sym}: {e}")
+              time.sleep(0.5)
 
           payload = {
-              "last_updated": datetime.now().strftime("%d-%m-%Y %H:%M:%S UTC"),
+              "last_updated": datetime.now().strftime("%d-%m-%Y %H:%M:%S IST"),
               "stocks": stock_results
           }
 
           with open("live_oi.json", "w") as f:
               json.dump(payload, f, indent=2)
 
-          print(f"Completed! Total live stocks captured: {len(stock_results)}")
+          print(f"Saved {len(stock_results)} verified real stocks.")
           EOF
 
       - name: Commit Live Data
@@ -110,5 +90,5 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add live_oi.json
-          git commit -m "Live market feed update [skip ci]" || exit 0
+          git commit -m "Real market feed update [skip ci]" || exit 0
           git push
