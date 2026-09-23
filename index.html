@@ -3,31 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Owl OI Pro Scanner (Price + Change in OI)</title>
+  <title>Owl OI Pro - Real Live Data</title>
   <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2991/2991148.png">
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2991/2991148.png">
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b132b; color: #f8fafc; margin: 0; padding: 16px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b132b; color: #f8fafc; margin: 0; padding: 16px; }
     .container { max-width: 980px; margin: auto; }
-    h1 { text-align: center; color: #38bdf8; font-size: 22px; margin-bottom: 4px; }
-    p.sub { text-align: center; color: #94a3b8; font-size: 13px; margin-top: 0; margin-bottom: 15px; }
-    .status-box { background: #1c2541; padding: 12px; border-radius: 10px; margin-bottom: 15px; text-align: center; border: 1px solid #3a506b; font-size: 14px; }
-    .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+    h1 { text-align: center; color: #38bdf8; font-size: 24px; margin-bottom: 4px; }
+    p.sub { text-align: center; color: #94a3b8; font-size: 13px; margin-top: 0; margin-bottom: 16px; }
+    .status-bar { background: #1c2541; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #3a506b; font-size: 14px; font-weight: 500; }
+    .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
     @media (max-width: 650px) { .cards-grid { grid-template-columns: 1fr; } }
-    .card { background: #1e293b; border-radius: 12px; padding: 18px; border-top: 5px solid #64748b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
-    .card.buy { border-top-color: #22c55e; }
-    .card.sell { border-top-color: #ef4444; }
-    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-bottom: 8px; }
+    .card { background: #1e293b; border-radius: 12px; padding: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    .card.buy { border-top: 5px solid #22c55e; }
+    .card.sell { border-top: 5px solid #ef4444; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-bottom: 8px; }
     .badge-buy { background: #14532d; color: #4ade80; }
     .badge-sell { background: #7f1d1d; color: #f87171; }
-    .badge-trap { background: #713f12; color: #facc15; }
-    .badge-neutral { background: #334155; color: #cbd5e1; }
     .symbol { font-size: 26px; font-weight: 800; margin: 4px 0; }
-    .price-tag { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
+    .price-box { font-size: 16px; font-weight: bold; margin-bottom: 12px; }
     .metric { margin: 8px 0; font-size: 13px; color: #cbd5e1; display: flex; justify-content: space-between; border-bottom: 1px solid #334155; padding-bottom: 4px; }
-    .metric span.val { font-weight: bold; color: #fff; }
-    .metric.highlight { font-size: 15px; color: #38bdf8; border: none; margin-top: 10px; }
-    .search-box { width: 100%; box-sizing: border-box; padding: 12px; background: #1e293b; border: 1px solid #3a506b; border-radius: 8px; color: white; font-size: 14px; margin-bottom: 15px; }
+    .metric span.val { font-weight: bold; color: #ffffff; }
+    .metric.total { font-size: 14px; color: #38bdf8; border: none; margin-top: 10px; }
+    .search-box { width: 100%; box-sizing: border-box; padding: 12px; background: #1e293b; border: 1px solid #3a506b; border-radius: 8px; color: white; font-size: 14px; margin-bottom: 16px; }
     .search-box:focus { outline: none; border-color: #38bdf8; }
     table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; font-size: 13px; }
     th, td { padding: 10px; text-align: right; border-bottom: 1px solid #334155; }
@@ -38,192 +35,123 @@
 <body>
   <div class="container">
     <h1>🦉 Owl OI Pro Scanner</h1>
-    <p class="sub">Price Action + आज का ताजा Change in OI (Full Confirmation)</p>
+    <p class="sub">100% आधिकारिक F&O मार्केट डेटा लाइव फीड</p>
 
-    <div class="status-box" id="status-bar">
-      🔄 डेटा लोड हो रहा है...
+    <div class="status-bar" id="status-bar">
+      ⏳ लाइव डेटा स्ट्रीम से कनेक्ट किया जा रहा है...
     </div>
 
     <div class="cards-grid">
-      <!-- Top 1 BUY -->
+      <!-- TOP BUY -->
       <div class="card buy">
-        <span class="badge badge-buy">TOP 1: CONFIRMED BUY (Price ↑ + Put Writing)</span>
+        <span class="badge badge-buy">TOP 1: STRONG BUY (Put Support)</span>
         <div class="symbol" id="buy-symbol">--</div>
-        <div class="price-tag" id="buy-price">--</div>
-        <div class="metric">आज का ताजा Put OI (New): <span class="val" id="buy-pe-chg">--</span></div>
-        <div class="metric">आज का ताजा Call OI: <span class="val" id="buy-ce-chg">--</span></div>
-        <div class="metric highlight">Net Fresh Support: <span class="val" id="buy-net-chg">--</span></div>
+        <div class="price-box" id="buy-price">--</div>
+        <div class="metric">Total Put OI: <span class="val" id="buy-pe-oi">--</span></div>
+        <div class="metric">Total Call OI: <span class="val" id="buy-ce-oi">--</span></div>
+        <div class="metric total">Net Support (PE - CE): <span class="val" id="buy-diff">--</span></div>
       </div>
 
-      <!-- Top 1 SELL -->
+      <!-- TOP SELL -->
       <div class="card sell">
-        <span class="badge badge-sell">TOP 1: CONFIRMED SELL (Price ↓ + Call Writing)</span>
+        <span class="badge badge-sell">TOP 1: STRONG SELL (Call Resistance)</span>
         <div class="symbol" id="sell-symbol">--</div>
-        <div class="price-tag" id="sell-price">--</div>
-        <div class="metric">आज का ताजा Call OI (New): <span class="val" id="sell-ce-chg">--</span></div>
-        <div class="metric">आज का ताजा Put OI: <span class="val" id="sell-pe-chg">--</span></div>
-        <div class="metric highlight">Net Fresh Resistance: <span class="val" id="sell-net-chg">--</span></div>
+        <div class="price-box" id="sell-price">--</div>
+        <div class="metric">Total Call OI: <span class="val" id="sell-ce-oi">--</span></div>
+        <div class="metric">Total Put OI: <span class="val" id="sell-pe-oi">--</span></div>
+        <div class="metric total">Net Resistance (CE - PE): <span class="val" id="sell-diff">--</span></div>
       </div>
     </div>
 
-    <h3>📊 50 F&O स्टॉक्स कन्फर्मेशन स्कैनर</h3>
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 शेयर का नाम खोजें (उदा. RELIANCE, HDFC, TATA)..." onkeyup="filterTable()">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 शेयर का नाम खोजें..." onkeyup="filterTable()">
 
     <div style="overflow-x: auto;">
       <table>
         <thead>
           <tr>
             <th>Stock</th>
-            <th>LTP (% Chg)</th>
-            <th>Call OI Chg (आज)</th>
-            <th>Put OI Chg (आज)</th>
-            <th>Net Chg (PE-CE)</th>
-            <th>Status / Signal</th>
+            <th>LTP (₹)</th>
+            <th>Call OI</th>
+            <th>Put OI</th>
+            <th>OI Diff (PE - CE)</th>
+            <th>Signal</th>
           </tr>
         </thead>
         <tbody id="table-body">
-          <tr><td colspan="6" style="text-align:center; color:#94a3b8;">डेटा लोड हो रहा है...</td></tr>
+          <tr><td colspan="6" style="text-align:center; color:#94a3b8; padding: 20px;">डेटा लोड हो रहा है...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <script>
+    let stockDataList = [];
+
     function formatNumber(num) {
       return new Intl.NumberFormat('en-IN').format(num);
     }
 
-    // 50 लिक्विड स्टॉक्स का डेटा जिसमें Price % Change और आज का Change in OI दोनों शामिल हैं
-    const LIVE_PRO_DATA = [
-      { symbol: "RELIANCE", ltp: 2980, pChg: 1.45, ceChg: -450000, peChg: 2150000 },
-      { symbol: "HDFCBANK", ltp: 1640, pChg: -1.20, ceChg: 3400000, peChg: -850000 },
-      { symbol: "ICICIBANK", ltp: 1255, pChg: 0.95, ceChg: 120000, peChg: 1840000 },
-      { symbol: "SBIN", ltp: 815, pChg: -1.60, ceChg: 2900000, peChg: -420000 },
-      { symbol: "INFY", ltp: 1910, pChg: 1.15, ceChg: -210000, peChg: 1450000 },
-      { symbol: "TCS", ltp: 4280, pChg: -0.80, ceChg: 850000, peChg: 120000 },
-      { symbol: "BHARTIARTL", ltp: 1645, pChg: 1.80, ceChg: -320000, peChg: 1920000 },
-      { symbol: "ITC", ltp: 505, pChg: -0.75, ceChg: 1800000, peChg: -350000 },
-      { symbol: "LT", ltp: 3680, pChg: 0.65, ceChg: 140000, peChg: 680000 },
-      { symbol: "TATAMOTORS", ltp: 965, pChg: -2.10, ceChg: 2450000, peChg: -910000 },
-      { symbol: "BAJFINANCE", ltp: 7420, pChg: 1.30, ceChg: -110000, peChg: 890000 },
-      { symbol: "MARUTI", ltp: 12450, pChg: 0.50, ceChg: 65000, peChg: 320000 },
-      { symbol: "SUNPHARMA", ltp: 1890, pChg: 1.05, ceChg: -80000, peChg: 540000 },
-      { symbol: "TITAN", ltp: 3740, pChg: -0.90, ceChg: 480000, peChg: -120000 },
-      { symbol: "NTPC", ltp: 425, pChg: 0.85, ceChg: 210000, peChg: 1100000 },
-      { symbol: "TATASTEEL", ltp: 154, pChg: -1.75, ceChg: 4500000, peChg: -1800000 },
-      { symbol: "M&M", ltp: 3120, pChg: 1.65, ceChg: -180000, peChg: 940000 },
-      { symbol: "ADANIENT", ltp: 3080, pChg: -1.10, ceChg: 980000, peChg: -150000 },
-      { symbol: "COALINDIA", ltp: 495, pChg: 0.40, ceChg: 340000, peChg: 820000 },
-      { symbol: "BAJAJFINSV", ltp: 1880, pChg: 0.70, ceChg: 95000, peChg: 450000 },
-      { symbol: "TECHM", ltp: 1610, pChg: -0.45, ceChg: 380000, peChg: 110000 },
-      { symbol: "HCLTECH", ltp: 1790, pChg: 0.85, ceChg: -90000, peChg: 560000 },
-      { symbol: "ONGC", ltp: 295, pChg: 1.25, ceChg: 150000, peChg: 1400000 },
-      { symbol: "WIPRO", ltp: 545, pChg: -1.15, ceChg: 1650000, peChg: -410000 },
-      { symbol: "VEDL", ltp: 490, pChg: 2.10, ceChg: -450000, peChg: 2200000 },
-      { symbol: "HEROMOTOCO", ltp: 5850, pChg: 0.60, ceChg: 45000, peChg: 240000 },
-      { symbol: "GRASIM", ltp: 2680, pChg: -0.65, ceChg: 280000, peChg: 65000 },
-      { symbol: "DIVISLAB", ltp: 5420, pChg: 0.90, ceChg: 35000, peChg: 190000 },
-      { symbol: "CIPLA", ltp: 1640, pChg: -0.35, ceChg: 210000, peChg: 95000 },
-      { symbol: "KOTAKBANK", ltp: 1820, pChg: -0.85, ceChg: 1150000, peChg: -210000 },
-      { symbol: "AXISBANK", ltp: 1240, pChg: 1.40, ceChg: -180000, peChg: 1650000 },
-      { symbol: "ASIANPAINT", ltp: 3290, pChg: -1.05, ceChg: 560000, peChg: -140000 },
-      { symbol: "HINDUNILVR", ltp: 2840, pChg: 0.55, ceChg: 120000, peChg: 780000 },
-      { symbol: "POWERGRID", ltp: 345, pChg: 0.70, ceChg: 290000, peChg: 980000 },
-      { symbol: "BPCL", ltp: 355, pChg: -1.30, ceChg: 1450000, peChg: -320000 },
-      { symbol: "JSWSTEEL", ltp: 995, pChg: 1.10, ceChg: -85000, peChg: 1120000 },
-      { symbol: "EICHERMOT", ltp: 4920, pChg: 0.45, ceChg: 40000, peChg: 180000 },
-      { symbol: "BRITANNIA", ltp: 6150, pChg: 0.65, ceChg: 25000, peChg: 145000 },
-      { symbol: "NESTLEIND", ltp: 2680, pChg: -0.40, ceChg: 95000, peChg: 35000 },
-      { symbol: "APOLLOHOSP", ltp: 7120, pChg: 0.75, ceChg: 30000, peChg: 160000 },
-      { symbol: "INDUSINDBK", ltp: 1450, pChg: -1.45, ceChg: 1250000, peChg: -340000 },
-      { symbol: "BEL", ltp: 298, pChg: 2.30, ceChg: -650000, peChg: 3100000 },
-      { symbol: "HAL", ltp: 4680, pChg: 1.50, ceChg: -120000, peChg: 840000 },
-      { symbol: "TRENT", ltp: 7550, pChg: 1.95, ceChg: -95000, peChg: 680000 },
-      { symbol: "SHRIRAMFIN", ltp: 3380, pChg: 0.90, ceChg: 65000, peChg: 420000 },
-      { symbol: "JIOFIN", ltp: 348, pChg: -1.25, ceChg: 2400000, peChg: -600000 },
-      { symbol: "ZOMATO", ltp: 275, pChg: 2.80, ceChg: -850000, peChg: 4200000 },
-      { symbol: "DLF", ltp: 875, pChg: 1.15, ceChg: -110000, peChg: 1150000 },
-      { symbol: "PFC", ltp: 515, pChg: -1.80, ceChg: 2600000, peChg: -750000 },
-      { symbol: "RECLTD", ltp: 585, pChg: 1.35, ceChg: -140000, peChg: 1550000 }
-    ];
+    async function loadLiveData() {
+      const statusBar = document.getElementById('status-bar');
+      try {
+        const response = await fetch('live_oi.json?nocache=' + new Date().getTime());
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+        const data = await response.json();
 
-    let currentList = [];
-
-    function processSignals(list) {
-      return list.map(item => {
-        const netChg = item.peChg - item.ceChg;
-        let signal = "NEUTRAL";
-        let badgeClass = "badge-neutral";
-
-        // कन्फर्मेशन लॉजिक: भाव और OI दोनों एक साथ चलने चाहिए
-        if (item.pChg > 0 && netChg > 0) {
-          signal = "STRONG BUY";
-          badgeClass = "badge-buy";
-        } else if (item.pChg < 0 && netChg < 0) {
-          signal = "STRONG SELL";
-          badgeClass = "badge-sell";
-        } else if (item.pChg > 0 && netChg < 0) {
-          signal = "TRAP (CALL HEAVY)";
-          badgeClass = "badge-trap";
-        } else if (item.pChg < 0 && netChg > 0) {
-          signal = "TRAP (PUT HEAVY)";
-          badgeClass = "badge-trap";
+        if (!data.stocks || data.stocks.length === 0) {
+          statusBar.innerHTML = `<span style="color:#f87171;">⚠️ लाइव डेटा उपलब्ध नहीं है (फ़ाइल खाली है)। अगली ऑटो-अपडेट की प्रतीक्षा करें।</span>`;
+          return;
         }
 
-        return { ...item, netChg, signal, badgeClass };
-      });
+        stockDataList = data.stocks;
+        statusBar.innerHTML = `<span style="color:#4ade80;">🟢 100% असली डेटा कनेक्टेड | अंतिम अपडेट: ${data.last_updated}</span>`;
+        renderDashboard(stockDataList);
+
+      } catch (err) {
+        statusBar.innerHTML = `<span style="color:#f87171;">⚠️ डेटा लोड नहीं हो सका (${err.message})। सुनिश्चित करें कि बैकग्राउंड रन पूरा हो चुका है।</span>`;
+      }
     }
 
-    function initScanner() {
-      const statusBar = document.getElementById('status-bar');
-      currentList = processSignals(LIVE_PRO_DATA);
+    function renderDashboard(stocks) {
+      const topBuy = [...stocks].sort((a, b) => b.diff - a.diff)[0];
+      const topSell = [...stocks].sort((a, b) => a.diff - b.diff)[0];
 
-      statusBar.innerHTML = `<span style="color:#4ade80;">🟢 Price Action + Change in OI इंजन सक्रिय (सटीक कन्फर्मेशन)</span>`;
+      if (topBuy) {
+        document.getElementById('buy-symbol').innerText = topBuy.symbol;
+        document.getElementById('buy-price').innerText = "₹" + topBuy.ltp;
+        document.getElementById('buy-pe-oi').innerText = formatNumber(topBuy.putOI);
+        document.getElementById('buy-ce-oi').innerText = formatNumber(topBuy.callOI);
+        document.getElementById('buy-diff').innerText = "+" + formatNumber(topBuy.diff);
+      }
 
-      // 1. Top Buy: भाव पॉजिटिव (+) और आज का Put OI अंतर सबसे बड़ा
-      const buyList = currentList.filter(x => x.pChg > 0 && x.netChg > 0).sort((a, b) => b.netChg - a.netChg);
-      const topBuy = buyList[0] || currentList[0];
+      if (topSell) {
+        document.getElementById('sell-symbol').innerText = topSell.symbol;
+        document.getElementById('sell-price').innerText = "₹" + topSell.ltp;
+        document.getElementById('sell-ce-oi').innerText = formatNumber(topSell.callOI);
+        document.getElementById('sell-pe-oi').innerText = formatNumber(topSell.putOI);
+        document.getElementById('sell-diff').innerText = "+" + formatNumber(Math.abs(topSell.diff));
+      }
 
-      // 2. Top Sell: भाव नेगेटिव (-) और आज का Call OI अंतर सबसे बड़ा
-      const sellList = currentList.filter(x => x.pChg < 0 && x.netChg < 0).sort((a, b) => a.netChg - b.netChg);
-      const topSell = sellList[0] || currentList[1];
-
-      // UI Cards
-      document.getElementById('buy-symbol').innerText = topBuy.symbol;
-      document.getElementById('buy-price').innerHTML = `₹${topBuy.ltp} <span style="color:#4ade80;">(+${topBuy.pChg}%)</span>`;
-      document.getElementById('buy-pe-chg').innerText = "+" + formatNumber(topBuy.peChg);
-      document.getElementById('buy-ce-chg').innerText = (topBuy.ceChg > 0 ? "+" : "") + formatNumber(topBuy.ceChg);
-      document.getElementById('buy-net-chg').innerText = "+" + formatNumber(topBuy.netChg);
-
-      document.getElementById('sell-symbol').innerText = topSell.symbol;
-      document.getElementById('sell-price').innerHTML = `₹${topSell.ltp} <span style="color:#f87171;">(${topSell.pChg}%)</span>`;
-      document.getElementById('sell-ce-chg').innerText = "+" + formatNumber(topSell.ceChg);
-      document.getElementById('sell-pe-chg').innerText = (topSell.peChg > 0 ? "+" : "") + formatNumber(topSell.peChg);
-      document.getElementById('sell-net-chg').innerText = "+" + formatNumber(Math.abs(topSell.netChg));
-
-      renderTable(currentList);
+      renderTable(stocks);
     }
 
-    function renderTable(list) {
+    function renderTable(stocks) {
       const tbody = document.getElementById('table-body');
       tbody.innerHTML = "";
 
-      // सबसे तगड़े मूव वाले शेयर ऊपर
-      const sorted = [...list].sort((a, b) => Math.abs(b.netChg) - Math.abs(a.netChg));
+      const sorted = [...stocks].sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
 
       sorted.forEach(item => {
-        const isGreen = item.pChg >= 0;
+        const isBull = item.diff > 0;
         const row = `<tr>
           <td><b>${item.symbol}</b></td>
-          <td style="color:${isGreen ? '#4ade80' : '#f87171'}; font-weight:bold;">
-            ₹${item.ltp} (${isGreen ? '+' : ''}${item.pChg}%)
-          </td>
-          <td style="color:${item.ceChg > 0 ? '#f87171' : '#94a3b8'}">${item.ceChg > 0 ? '+' : ''}${formatNumber(item.ceChg)}</td>
-          <td style="color:${item.peChg > 0 ? '#4ade80' : '#94a3b8'}">${item.peChg > 0 ? '+' : ''}${formatNumber(item.peChg)}</td>
-          <td style="color:${item.netChg > 0 ? '#4ade80' : '#f87171'}; font-weight:bold;">
-            ${item.netChg > 0 ? '+' : ''}${formatNumber(item.netChg)}
-          </td>
-          <td><span class="badge ${item.badgeClass}">${item.signal}</span></td>
+          <td style="font-weight:bold;">₹${item.ltp}</td>
+          <td>${formatNumber(item.callOI)}</td>
+          <td>${formatNumber(item.putOI)}</td>
+          <td style="color:${isBull ? '#4ade80' : '#f87171'}; font-weight:bold;">${isBull ? '+' : ''}${formatNumber(item.diff)}</td>
+          <td><span class="badge ${isBull ? 'badge-buy' : 'badge-sell'}">${isBull ? 'BUY' : 'SELL'}</span></td>
         </tr>`;
         tbody.innerHTML += row;
       });
@@ -231,11 +159,11 @@
 
     function filterTable() {
       const query = document.getElementById('searchInput').value.toUpperCase();
-      const filtered = currentList.filter(s => s.symbol.toUpperCase().includes(query));
+      const filtered = stockDataList.filter(s => s.symbol.toUpperCase().includes(query));
       renderTable(filtered);
     }
 
-    window.onload = initScanner;
+    window.onload = loadLiveData;
   </script>
 </body>
 </html>
