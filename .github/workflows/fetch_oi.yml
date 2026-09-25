@@ -22,7 +22,7 @@ jobs:
 
       - name: Install Kotak Neo SDK
         run: |
-          pip install neo-api-client pandas requests
+          pip install git+https://github.com/Kotak-Securities/Neo-API-Client.git pandas requests
 
       - name: Fetch Real Market Data via Kotak Neo
         env:
