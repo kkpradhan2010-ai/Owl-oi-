@@ -20,9 +20,9 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Kotak Neo SDK
+      - name: Install Dependencies
         run: |
-          pip install git+https://github.com/Kotak-Securities/Neo-API-Client.git pandas requests
+          pip install requests pandas
 
       - name: Fetch Real Market Data via Kotak Neo
         env:
@@ -35,26 +35,19 @@ jobs:
           import os
           import json
           import time
+          import requests
           from datetime import datetime
-          from neo_api_client import NeoAPI
 
-          consumer_key = os.environ.get("CONSUMER_KEY")
-          consumer_secret = os.environ.get("CONSUMER_SECRET")
-          mobile_number = os.environ.get("MOBILE_NUMBER")
-          password = os.environ.get("PASSWORD")
+          token = os.environ.get("CONSUMER_KEY")
 
-          if not consumer_key or not mobile_number:
-              print("Missing Kotak Neo secrets. Check GitHub Settings.")
+          if not token:
+              print("Missing Kotak Neo token. Check GitHub Settings.")
               exit(1)
 
-          client = NeoAPI(consumer_key=consumer_key, consumer_secret=consumer_secret, environment='prod')
-
-          try:
-              client.login(mobilenumber=mobile_number, password=password)
-              print("Authentication successful with Kotak Neo!")
-          except Exception as e:
-              print(f"Login failed: {e}")
-              exit(1)
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "accept": "application/json"
+          }
 
           symbols = [
               "RELIANCE", "HDFCBANK", "ICICIBANK", "SBIN", "INFY", "TCS",
@@ -64,35 +57,42 @@ jobs:
 
           stock_results = []
 
+          # Kotak Neo Live Scrip Search & Quotes API
           for sym in symbols:
               try:
-                  quote = client.quotes(instrument_tokens=[{"instrument_token": sym, "exchange_segment": "nse_cm"}], quote_type="LTP")
+                  url = f"https://gw-napi.kotaksecurities.com/Quotes/2.0/Equity/QuoteSearch?symbol={sym}&exchange=NSE"
+                  res = requests.get(url, headers=headers, timeout=10)
+                  
                   ltp = 0
-                  if quote and "data" in quote and len(quote["data"]) > 0:
-                      ltp = float(quote["data"][0].get("last_traded_price", 0))
-
-                  chain = client.option_chain(symbol=sym, exchange_segment="nse_fo")
-                  total_ce_oi = 0
-                  total_pe_oi = 0
-
-                  if chain and "data" in chain:
-                      for row in chain["data"]:
-                          total_ce_oi += int(row.get("call_oi", 0))
-                          total_pe_oi += int(row.get("put_oi", 0))
+                  if res.status_code == 200:
+                      d = res.json()
+                      ltp = float(d.get("data", {}).get("ltp", 0) or 0)
+                  
+                  # ऑप्शन चेन फेच
+                  chain_url = f"https://gw-napi.kotaksecurities.com/OptionChain/1.0/OptionChain?symbol={sym}&exchange=NSE"
+                  c_res = requests.get(chain_url, headers=headers, timeout=10)
+                  
+                  call_oi = 0
+                  put_oi = 0
+                  if c_res.status_code == 200:
+                      chain_data = c_res.json().get("data", [])
+                      for strike in chain_data:
+                          call_oi += int(strike.get("ce_oi", 0) or 0)
+                          put_oi += int(strike.get("pe_oi", 0) or 0)
 
                   if ltp > 0:
-                      diff = total_pe_oi - total_ce_oi
+                      diff = put_oi - call_oi
                       stock_results.append({
                           "symbol": sym,
                           "ltp": round(ltp, 2),
-                          "callOI": total_ce_oi,
-                          "putOI": total_pe_oi,
+                          "callOI": call_oi,
+                          "putOI": put_oi,
                           "diff": diff
                       })
                       print(f"OK: {sym} | LTP: {ltp} | PE-CE Diff: {diff}")
-              except Exception as err:
-                  print(f"Error fetching {sym}: {err}")
-              time.sleep(0.3)
+              except Exception as e:
+                  print(f"Error fetching {sym}: {e}")
+              time.sleep(0.2)
 
           payload = {
               "last_updated": datetime.now().strftime("%d-%m-%Y %H:%M:%S IST"),
@@ -102,7 +102,7 @@ jobs:
           with open("live_oi.json", "w") as f:
               json.dump(payload, f, indent=2)
 
-          print(f"Total live stocks saved: {len(stock_results)}")
+          print(f"Total live stocks captured: {len(stock_results)}")
           EOF
 
       - name: Commit Real Data
@@ -110,5 +110,5 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add live_oi.json
-          git commit -m "Kotak Neo official feed update [skip ci]" || exit 0
+          git commit -m "Kotak Neo direct API update [skip ci]" || exit 0
           git push
