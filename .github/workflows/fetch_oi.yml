@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  scrape-live-data:
+  fetch-kotak-neo:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -20,59 +20,79 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install Kotak Neo SDK
         run: |
-          pip install requests yfinance
+          pip install neo-api-client pandas requests
 
-      - name: Fetch Verified Market Data
+      - name: Fetch Real Market Data via Kotak Neo
+        env:
+          CONSUMER_KEY: ${{ secrets.KOTAK_CONSUMER_KEY }}
+          CONSUMER_SECRET: ${{ secrets.KOTAK_CONSUMER_SECRET }}
+          MOBILE_NUMBER: ${{ secrets.KOTAK_MOBILE_NUMBER }}
+          PASSWORD: ${{ secrets.KOTAK_PASSWORD }}
         run: |
           python - << 'EOF'
+          import os
           import json
           import time
           from datetime import datetime
-          import yfinance as yf
+          from neo_api_client import NeoAPI
 
-          # F&O के प्रमुख स्टॉक्स
+          consumer_key = os.environ.get("CONSUMER_KEY")
+          consumer_secret = os.environ.get("CONSUMER_SECRET")
+          mobile_number = os.environ.get("MOBILE_NUMBER")
+          password = os.environ.get("PASSWORD")
+
+          if not consumer_key or not mobile_number:
+              print("Missing Kotak Neo secrets. Check GitHub Settings.")
+              exit(1)
+
+          client = NeoAPI(consumer_key=consumer_key, consumer_secret=consumer_secret, environment='prod')
+
+          try:
+              client.login(mobilenumber=mobile_number, password=password)
+              print("Authentication successful with Kotak Neo!")
+          except Exception as e:
+              print(f"Login failed: {e}")
+              exit(1)
+
           symbols = [
-              "RELIANCE.NS", "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "INFY.NS", 
-              "TCS.NS", "BHARTIARTL.NS", "ITC.NS", "LT.NS", "KOTAKBANK.NS", 
-              "AXISBANK.NS", "TATAMOTORS.NS", "BAJFINANCE.NS", "MARUTI.NS", 
-              "TATASTEEL.NS", "M&M.NS", "ADANIENT.NS", "COALINDIA.NS"
+              "RELIANCE", "HDFCBANK", "ICICIBANK", "SBIN", "INFY", "TCS",
+              "BHARTIARTL", "ITC", "LT", "KOTAKBANK", "AXISBANK", "TATAMOTORS",
+              "BAJFINANCE", "MARUTI", "TATASTEEL", "M&M"
           ]
 
           stock_results = []
 
-          for s in symbols:
-              clean_sym = s.replace(".NS", "")
+          for sym in symbols:
               try:
-                  ticker = yf.Ticker(s)
-                  # लाइव प्राइस
-                  fast_info = ticker.fast_info
-                  ltp = round(fast_info.last_price, 2)
-                  
-                  # ऑप्शंस एक्सपायरी डेट्स
-                  expirations = ticker.options
-                  if expirations:
-                      # सबसे नजदीकी एक्सपायरी का लाइव चेन
-                      opt = ticker.option_chain(expirations[0])
-                      calls = opt.calls
-                      puts = opt.puts
-                      
-                      total_ce_oi = int(calls['openInterest'].fillna(0).sum())
-                      total_pe_oi = int(puts['openInterest'].fillna(0).sum())
+                  quote = client.quotes(instrument_tokens=[{"instrument_token": sym, "exchange_segment": "nse_cm"}], quote_type="LTP")
+                  ltp = 0
+                  if quote and "data" in quote and len(quote["data"]) > 0:
+                      ltp = float(quote["data"][0].get("last_traded_price", 0))
+
+                  chain = client.option_chain(symbol=sym, exchange_segment="nse_fo")
+                  total_ce_oi = 0
+                  total_pe_oi = 0
+
+                  if chain and "data" in chain:
+                      for row in chain["data"]:
+                          total_ce_oi += int(row.get("call_oi", 0))
+                          total_pe_oi += int(row.get("put_oi", 0))
+
+                  if ltp > 0:
                       diff = total_pe_oi - total_ce_oi
-                      
                       stock_results.append({
-                          "symbol": clean_sym,
-                          "ltp": ltp,
+                          "symbol": sym,
+                          "ltp": round(ltp, 2),
                           "callOI": total_ce_oi,
                           "putOI": total_pe_oi,
                           "diff": diff
                       })
-                      print(f"Success: {clean_sym} -> LTP: {ltp}, Diff: {diff}")
-              except Exception as e:
-                  print(f"Error on {clean_sym}: {e}")
-              time.sleep(0.5)
+                      print(f"OK: {sym} | LTP: {ltp} | PE-CE Diff: {diff}")
+              except Exception as err:
+                  print(f"Error fetching {sym}: {err}")
+              time.sleep(0.3)
 
           payload = {
               "last_updated": datetime.now().strftime("%d-%m-%Y %H:%M:%S IST"),
@@ -82,13 +102,13 @@ jobs:
           with open("live_oi.json", "w") as f:
               json.dump(payload, f, indent=2)
 
-          print(f"Saved {len(stock_results)} verified real stocks.")
+          print(f"Total live stocks saved: {len(stock_results)}")
           EOF
 
-      - name: Commit Live Data
+      - name: Commit Real Data
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add live_oi.json
-          git commit -m "Real market feed update [skip ci]" || exit 0
+          git commit -m "Kotak Neo official feed update [skip ci]" || exit 0
           git push
